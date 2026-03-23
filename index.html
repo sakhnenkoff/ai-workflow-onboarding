@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Workflow Onboarding — Facilitator Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #0a0a0f;
+    --bg-surface: #12121a;
+    --bg-card: #1a1a26;
+    --bg-card-hover: #22222f;
+    --bg-elevated: #252533;
+    --border: #2a2a3a;
+    --border-active: #4a4a6a;
+    --text-primary: #e8e8f0;
+    --text-secondary: #8888a0;
+    --text-muted: #55556a;
+    --accent-blue: #5b8af5;
+    --accent-blue-dim: #3a5aa0;
+    --accent-green: #4ade80;
+    --accent-green-dim: rgba(74, 222, 128, 0.15);
+    --accent-amber: #f59e0b;
+    --accent-amber-dim: rgba(245, 158, 11, 0.15);
+    --accent-red: #f87171;
+    --accent-purple: #a78bfa;
+    --accent-purple-dim: rgba(167, 139, 250, 0.12);
+    --accent-cyan: #22d3ee;
+    --accent-cyan-dim: rgba(34, 211, 238, 0.12);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.08;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; }
+
+  /* ─── HEADER ─── */
+  .header {
+    padding: 32px 40px 24px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(91,138,245,0.06) 0%, transparent 100%);
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+  }
+
+  .header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-blue) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .header-meta {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 400;
+    margin-top: 8px;
+  }
+
+  .header-meta span { display: inline-block; margin-right: 20px; }
+
+  .header-meta code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: var(--bg-card);
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: var(--accent-blue);
+  }
+
+  .header-actions { display: flex; gap: 8px; }
+
+  .header-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .header-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+  .header-btn.danger:hover { border-color: var(--accent-red); color: var(--accent-red); }
+
+  /* ─── PROGRESS BAR ─── */
+  .progress-overview {
+    display: flex;
+    gap: 16px;
+    padding: 20px 40px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-surface);
+  }
+
+  .progress-day {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    transition: border-color 0.3s;
+  }
+
+  .progress-day.active { border-color: var(--accent-blue-dim); }
+  .progress-day.completed { border-color: var(--accent-green); }
+
+  .progress-day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .progress-day-label {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+  }
+
+  .progress-day-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent-blue);
+    transition: color 0.3s;
+  }
+
+  .progress-day.completed .progress-day-pct { color: var(--accent-green); }
+
+  .progress-bar-track {
+    height: 6px;
+    background: var(--bg-deep);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+    border-radius: 3px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 0%;
+  }
+
+  .progress-day.completed .progress-bar-fill {
+    background: linear-gradient(90deg, var(--accent-green), #2dd4bf);
+  }
+
+  /* ─── NAV TABS ─── */
+  .nav-tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 40px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-tab {
+    padding: 14px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    user-select: none;
+  }
+
+  .nav-tab:hover { color: var(--text-primary); }
+  .nav-tab.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
+
+  /* ─── CONTENT ─── */
+  .content { padding: 24px 40px 60px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ─── SECTION ─── */
+  .section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+  }
+
+  .section-header:hover { background: var(--bg-card-hover); }
+
+  .section-chevron {
+    font-size: 12px;
+    color: var(--text-muted);
+    transition: transform 0.25s;
+    flex-shrink: 0;
+  }
+
+  .section.open .section-chevron { transform: rotate(90deg); }
+  .section-title { font-size: 15px; font-weight: 600; flex: 1; }
+
+  .section-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+
+  .badge-time { background: var(--accent-purple-dim); color: var(--accent-purple); }
+  .badge-count { background: var(--accent-amber-dim); color: var(--accent-amber); }
+  .badge-done { background: var(--accent-green-dim); color: var(--accent-green); }
+
+  .section-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .section.open .section-body { max-height: 5000px; }
+
+  .section-content {
+    padding: 0 20px 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ─── BLOCK ─── */
+  .block {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: border-color 0.3s, opacity 0.3s;
+  }
+
+  .block.block-done { border-color: var(--accent-green); opacity: 0.7; }
+
+  .block-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+  }
+
+  .block-header:hover { background: var(--bg-card-hover); }
+
+  .block-check {
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--border-active);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 13px;
+    color: transparent;
+  }
+
+  .block-check:hover { border-color: var(--accent-green); }
+  .block-check.checked {
+    background: var(--accent-green);
+    border-color: var(--accent-green);
+    color: var(--bg-deep);
+  }
+
+  .block-info { flex: 1; }
+  .block-title { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .block-goal { font-size: 12px; color: var(--text-secondary); font-style: italic; }
+
+  .block-chevron {
+    font-size: 12px;
+    color: var(--text-muted);
+    transition: transform 0.25s;
+    flex-shrink: 0;
+  }
+
+  .block.open .block-chevron { transform: rotate(90deg); }
+
+  .block-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .block.open .block-body { max-height: 8000px; }
+
+  .block-content {
+    padding: 0 20px 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ─── SUBSECTIONS ─── */
+  .subsection { margin-top: 16px; }
+
+  .subsection-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent-blue);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .subsection-title::before {
+    content: '';
+    width: 3px;
+    height: 14px;
+    background: var(--accent-blue);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .item-list { list-style: none; padding: 0; }
+
+  .item-list li {
+    font-size: 14px;
+    padding: 6px 0;
+    padding-left: 16px;
+    position: relative;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .item-list li::before {
+    content: '›';
+    position: absolute;
+    left: 0;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  .item-list li code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: var(--bg-deep);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--accent-purple);
+  }
+
+  /* ─── HINT SYSTEM ─── */
+  .hint-trigger {
+    color: var(--text-primary);
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.15s;
+    position: relative;
+    display: inline;
+  }
+
+  .hint-trigger::after {
+    content: '▸';
+    display: inline-block;
+    font-size: 10px;
+    margin-left: 5px;
+    color: var(--text-muted);
+    transition: all 0.2s;
+    vertical-align: middle;
+  }
+
+  .hint-trigger:hover { color: var(--accent-blue); }
+  .hint-trigger:hover::after { color: var(--accent-blue); }
+
+  .hint-trigger.hint-open { color: var(--accent-blue); }
+  .hint-trigger.hint-open::after {
+    content: '▾';
+    color: var(--accent-blue);
+  }
+
+  .hint-panel {
+    display: none;
+    margin: 10px 0 14px;
+    padding: 16px 18px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    animation: hintSlide 0.2s ease-out;
+  }
+
+  .hint-panel.visible { display: block; }
+
+  @keyframes hintSlide {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hint-panel strong { color: var(--text-primary); font-weight: 600; }
+
+  .hint-panel .hint-cmd {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: var(--bg-deep);
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin: 8px 0;
+    color: var(--accent-green);
+    border-left: 3px solid rgba(74, 222, 128, 0.4);
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .hint-panel .hint-example {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: var(--bg-deep);
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin: 8px 0;
+    color: var(--accent-purple);
+    border-left: 3px solid rgba(167, 139, 250, 0.4);
+    white-space: pre-wrap;
+  }
+
+  .hint-panel .hint-say {
+    display: block;
+    font-style: italic;
+    padding: 8px 12px;
+    margin: 8px 0;
+    border-left: 3px solid rgba(245, 158, 11, 0.4);
+    background: var(--bg-deep);
+    color: var(--accent-amber);
+    border-radius: 0 6px 6px 0;
+    font-size: 12px;
+  }
+
+  .hint-panel .hint-say::before {
+    content: '';
+  }
+
+  /* ─── NOTES ─── */
+  .note {
+    font-size: 12px;
+    color: var(--accent-amber);
+    font-style: italic;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: var(--accent-amber-dim);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--accent-amber);
+  }
+
+  .keyboard-note {
+    font-size: 12px;
+    color: var(--accent-blue);
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    background: rgba(91,138,245,0.1);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--accent-blue);
+  }
+
+  /* ─── CHECKLIST ─── */
+  .checklist { list-style: none; padding: 0; }
+
+  .checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 14px;
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.2s;
+  }
+
+  .checklist li.checked-item { opacity: 0.5; text-decoration: line-through; }
+
+  .checklist li input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border-active);
+    border-radius: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 2px;
+    position: relative;
+    transition: all 0.2s;
+  }
+
+  .checklist li input[type="checkbox"]:checked {
+    background: var(--accent-green);
+    border-color: var(--accent-green);
+  }
+
+  .checklist li input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--bg-deep);
+  }
+
+  .checklist li span { flex: 1; }
+  .checklist li code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: var(--bg-deep);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--accent-purple);
+  }
+
+  .checklist-category {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-top: 16px;
+    margin-bottom: 4px;
+  }
+
+  .checklist-category:first-child { margin-top: 8px; }
+
+  /* ─── MCP TABLE ─── */
+  .mcp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 12px;
+  }
+
+  .mcp-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .mcp-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .mcp-table td:first-child { font-weight: 500; color: var(--text-primary); }
+  .mcp-table td:nth-child(2) { color: var(--text-secondary); }
+
+  .mcp-table td code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: var(--bg-deep);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--accent-purple);
+    word-break: break-all;
+  }
+
+  .mcp-table tr:last-child td { border-bottom: none; }
+
+  /* ─── PIPELINE ─── */
+  .pipeline {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    margin: 12px 0;
+    flex-wrap: wrap;
+  }
+
+  .pipeline-step {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 5px 10px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--accent-blue);
+    white-space: nowrap;
+  }
+
+  .pipeline-arrow { color: var(--text-muted); font-size: 12px; }
+
+  /* ─── SUCCESS CRITERIA ─── */
+  .criteria-list {
+    list-style: none;
+    padding: 0;
+    counter-reset: criteria;
+  }
+
+  .criteria-list li {
+    counter-increment: criteria;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    font-size: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .criteria-list li:last-child { border-bottom: none; }
+
+  .criteria-list li::before {
+    content: counter(criteria);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    width: 24px; height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: var(--accent-purple-dim);
+    color: var(--accent-purple);
+    flex-shrink: 0;
+  }
+
+  .criteria-list li strong { color: var(--text-primary); font-weight: 600; }
+
+  /* ─── OPTION CARDS ─── */
+  .option-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .option-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+  }
+
+  .option-card-title { font-size: 13px; font-weight: 600; color: var(--accent-blue); margin-bottom: 8px; }
+
+  .option-card ul { list-style: none; padding: 0; }
+
+  .option-card ul li {
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding: 3px 0 3px 12px;
+    position: relative;
+  }
+
+  .option-card ul li::before { content: '•'; position: absolute; left: 0; color: var(--text-muted); }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 768px) {
+    .header, .progress-overview, .content { padding-left: 20px; padding-right: 20px; }
+    .nav-tabs { padding: 0 20px; overflow-x: auto; }
+    .progress-overview { flex-direction: column; }
+    .option-cards { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <h1>AI Workflow Onboarding</h1>
+        <div class="header-meta">
+          <span>Principal Engineer</span>
+          <span>2 half-days, ~3-4h each</span>
+          <span>Author: <code>Matvii Sakhnenko</code></span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="header-btn" onclick="collapseAll()">COLLAPSE ALL</button>
+        <button class="header-btn" onclick="expandAll()">EXPAND ALL</button>
+        <button class="header-btn danger" onclick="resetAll()">RESET</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-overview">
+    <div class="progress-day" id="progress-day1">
+      <div class="progress-day-header">
+        <span class="progress-day-label">Day 1 — The AI Workstation</span>
+        <span class="progress-day-pct" id="day1-pct">0%</span>
+      </div>
+      <div class="progress-bar-track"><div class="progress-bar-fill" id="day1-bar"></div></div>
+    </div>
+    <div class="progress-day" id="progress-day2">
+      <div class="progress-day-header">
+        <span class="progress-day-label">Day 2 — The AI Workflow</span>
+        <span class="progress-day-pct" id="day2-pct">0%</span>
+      </div>
+      <div class="progress-bar-track"><div class="progress-bar-fill" id="day2-bar"></div></div>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav-tabs">
+    <div class="nav-tab active" data-tab="prereqs">Prerequisites</div>
+    <div class="nav-tab" data-tab="day1">Day 1</div>
+    <div class="nav-tab" data-tab="day2">Day 2</div>
+    <div class="nav-tab" data-tab="checklist">Tool Checklist</div>
+    <div class="nav-tab" data-tab="criteria">Success Criteria</div>
+  </div>
+
+  <div class="content">
+
+    <!-- ═══ PREREQUISITES ═══ -->
+    <div class="tab-panel active" id="tab-prereqs">
+      <div class="section open">
+        <div class="section-header" onclick="toggleSection(this)">
+          <span class="section-chevron">▶</span>
+          <span class="section-title">Must Have</span>
+          <span class="section-badge badge-count" id="prereqs-must-count">0/7</span>
+        </div>
+        <div class="section-body"><div class="section-content">
+          <ul class="checklist" data-group="prereqs-must">
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>iOS repo cloned and accessible <code>~/Developer/Finn/ios-app</code></span></li>
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Xcode installed with iOS simulators</span></li>
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Admin rights to install apps (Homebrew, CLI tools)</span></li>
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>GitHub account with repo access and <code>gh</code> CLI authenticated</span></li>
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Google account with Firebase project access</span></li>
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Atlassian credentials (Jira/Confluence)</span></li>
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Node.js installed <code>brew install node</code></span></li>
+          </ul>
+        </div></div>
+      </div>
+
+      <div class="section open">
+        <div class="section-header" onclick="toggleSection(this)">
+          <span class="section-chevron">▶</span>
+          <span class="section-title">Nice to Have</span>
+          <span class="section-badge badge-count" id="prereqs-nice-count">0/3</span>
+        </div>
+        <div class="section-body"><div class="section-content">
+          <ul class="checklist" data-group="prereqs-nice">
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Figma account with access to FINN design files</span></li>
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Amplitude account access</span></li>
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>A candidate backlog item for Day 2 (&lt;4 story points, no Figma dependency)</span></li>
+          </ul>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- ═══ DAY 1 ═══ -->
+    <div class="tab-panel" id="tab-day1">
+      <div class="keyboard-note">You drive and demonstrate, they follow along setting up on their own machine.</div>
+
+      <!-- Block 1: Foundation -->
+      <div class="block" data-day="1">
+        <div class="block-header" onclick="toggleBlock(this)">
+          <div class="block-check" onclick="event.stopPropagation(); toggleBlockCheck(this)">✓</div>
+          <div class="block-info">
+            <div class="block-title">Block 1: Foundation</div>
+            <div class="block-goal">Get their machine speaking AI fluently</div>
+          </div>
+          <span class="section-badge badge-time">~50min</span>
+          <span class="block-chevron">▶</span>
+        </div>
+        <div class="block-body"><div class="block-content">
+          <div class="note">Budget extra time here — first-time installs and auth flows can be unpredictable.</div>
+
+          <div class="subsection">
+            <div class="subsection-title">Warp Terminal</div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Install and configure Warp</span>
+                <div class="hint-panel">
+                  <span class="hint-cmd">brew install --cask warp</span>
+                  Then open Warp, sign in (free account), and go to <strong>Settings &gt; General &gt; Default Terminal App</strong> to set as default.<br><br>
+                  <span class="hint-say">"Warp gives us command blocks — each command and its output is a discrete block you can copy, share, or reference. No more scrolling through walls of text."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Show advantages for AI CLI work</span>
+                <div class="hint-panel">
+                  Demo these three features:
+                  <br>1. <strong>Command blocks</strong> — run <code>ls -la</code> and show how output is contained in a collapsible block
+                  <br>2. <strong>AI suggestions</strong> — start typing a command and show Warp's inline suggestions
+                  <br>3. <strong>Searchable history</strong> — press <code>Ctrl+R</code> and search for a previous command
+                  <br><br>
+                  <span class="hint-say">"When you're running Claude Code, having clean command blocks means you can visually track what Claude did versus what you did."</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-title">Wispr Flow</div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Install and set up voice-to-prompt</span>
+                <div class="hint-panel">
+                  Install via Homebrew:
+                  <span class="hint-cmd">brew install --cask wispr-flow</span>
+                  Or download directly from <strong>wisprflow.ai/downloads</strong>.<br><br>
+                  After install, macOS will prompt for permissions. Grant both:
+                  <br>1. <strong>System Settings &gt; Privacy &amp; Security &gt; Microphone</strong> — enable Wispr Flow
+                  <br>2. <strong>System Settings &gt; Privacy &amp; Security &gt; Accessibility</strong> — enable Wispr Flow
+                  <br><br>Set a global hotkey (default is <code>Option+Space</code>). Sign in with Google, Apple, or email.<br><br>
+                  <strong>Demo:</strong> Open Claude Code, press the Wispr hotkey, speak your prompt, and watch it transcribe directly into the input field.<br><br>
+                  <span class="hint-say">"I use this constantly — reading code in one window and voice-prompting Claude in the terminal. No context switching, no typing long prompts."</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-title">Claude Code Basics</div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Install and authenticate</span>
+                <div class="hint-panel">
+                  Recommended install (native installer — no Node.js dependency, auto-updates):
+                  <span class="hint-cmd">curl -fsSL https://claude.ai/install.sh | bash</span>
+                  Or via Homebrew:
+                  <span class="hint-cmd">brew install --cask claude-code</span>
+                  Then launch:
+                  <span class="hint-cmd">claude</span>
+                  First run will open a browser for authentication. Make sure they use their work Anthropic account.<br><br>
+                  After auth, verify it works:
+                  <span class="hint-cmd">claude --version</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Bang command — execute bash instantly</span>
+                <div class="hint-panel">
+                  Type <code>!</code> followed by any shell command directly in the Claude Code prompt. It runs instantly and adds the output to the conversation context — no back-and-forth with Claude needed.
+                  <span class="hint-example">!git status
+!ls app-modules/Sources/
+!cat AGENTS.md | head -20</span>
+                  <span class="hint-say">"Instead of asking Claude to check git status and waiting for it to run the tool, just bang it. Instant, direct, and you control exactly what goes into context."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">/btw — ask while Claude is working</span>
+                <div class="hint-panel">
+                  Use <code>/btw</code> to ask a quick side question <strong>while Claude is actively working</strong>. It answers without adding to the main conversation history — so it doesn't derail the current task.
+                  <span class="hint-example">/btw what's the difference between Drive and FinnUI modules?</span>
+                  <span class="hint-say">"Claude is mid-task, reading files, making edits — and you have a quick question. /btw lets you ask without interrupting the flow."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Esc Esc — rewind to checkpoint</span>
+                <div class="hint-panel">
+                  Press <code>Esc</code> twice quickly to open the <strong>rewind menu</strong>. It shows checkpoints in the conversation — pick which point to rewind to. File changes get undone and the conversation is restored.
+                  <br><br>You can also use the <code>/rewind</code> command for the same menu.
+                  <span class="hint-say">"Think of it like Cmd+Z for AI — but you pick how far back to go. Claude went the wrong direction three steps ago? Rewind there, rephrase, and try again."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Shift+Tab — mode switching</span>
+                <div class="hint-panel">
+                  Cycles between three modes:
+                  <br>• <strong>Normal</strong> — Claude asks permission before each action
+                  <br>• <strong>Auto-Accept</strong> — Claude executes without asking (fast but less control)
+                  <br>• <strong>Plan</strong> — Claude only plans, never executes (great for architecture discussions)
+                  <br><br>
+                  <span class="hint-say">"I use Plan mode first to let Claude think through the approach, then switch to Auto-Accept to execute. It's like having a senior dev plan and a junior dev type."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Ctrl+S — stash prompt</span>
+                <div class="hint-panel">
+                  Press <code>Ctrl+S</code> to stash your current prompt input. Think of it like git stash — saves what you're typing so you can do something else, then restore it later.
+                  <span class="hint-say">"Midway through writing a complex prompt and need to do something else first? Ctrl+S stashes it so you don't lose your train of thought."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Session recovery — continue and resume</span>
+                <div class="hint-panel">
+                  <span class="hint-cmd">claude --continue          # Resume the last conversation
+claude --resume            # Pick from any past session
+claude --resume my-feature # Resume a named session</span>
+                  Name a session with <code>/rename my-feature</code> while inside Claude Code.
+                  <br><br>
+                  <span class="hint-say">"Terminal died? MacBook crashed? No problem. Your sessions are saved. --continue picks up right where you left off."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Thinking modes</span>
+                <div class="hint-panel">
+                  Add these keywords anywhere in your prompt to control reasoning effort. Claude uses <strong>adaptive reasoning</strong> — it dynamically allocates thinking based on the effort level:
+                  <br><br>• <code>think</code> — standard reasoning effort
+                  <br>• <code>think hard</code> — higher effort, more thorough
+                  <br>• <code>ultrathink</code> — maximum effort for complex problems
+                  <span class="hint-example">think hard about how to refactor this coordinator to support deep links</span>
+                  <span class="hint-say">"Use 'think' for straightforward stuff. 'ultrathink' when you need Claude to really reason through something — architecture decisions, tricky concurrency, multi-file refactors."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">/context — visualize context usage</span>
+                <div class="hint-panel">
+                  Type <code>/context</code> to see a visual grid of current context usage. It shows optimization suggestions for context-heavy tools, memory bloat, and capacity warnings.
+                  <span class="hint-say">"This tells you how much of Claude's context window you've used up. If things start feeling slow or off, /context shows you what's eating space."</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Block 2: Context -->
+      <div class="block" data-day="1">
+        <div class="block-header" onclick="toggleBlock(this)">
+          <div class="block-check" onclick="event.stopPropagation(); toggleBlockCheck(this)">✓</div>
+          <div class="block-info">
+            <div class="block-title">Block 2: Context — How the Repo Teaches AI</div>
+            <div class="block-goal">The "aha moment" — project context transforms Claude</div>
+          </div>
+          <span class="section-badge badge-time">~50min</span>
+          <span class="block-chevron">▶</span>
+        </div>
+        <div class="block-body"><div class="block-content">
+
+          <div class="subsection">
+            <div class="subsection-title">CLAUDE.md / AGENTS.md Walkthrough</div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Open and walk through the context files</span>
+                <div class="hint-panel">
+                  Open the files together:
+                  <span class="hint-cmd">cd ~/Developer/Finn/ios-app
+cat CLAUDE.md    # Short — points to AGENTS.md
+cat AGENTS.md    # The big one — walk through each section</span>
+                  Key sections to highlight in AGENTS.md:
+                  <br>• <strong>Available Skills</strong> table — the skill catalog
+                  <br>• <strong>iOS Feature Pipeline</strong> — greenfield vs ported vs small task
+                  <br>• <strong>Engineering Policies</strong> — SwiftLint, concurrency, design system rules
+                  <br>• <strong>Build Verification</strong> — default simulator, when to ask before building
+                  <br>• <strong>Git Policy</strong> — never commit unless explicitly asked
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">What context enables and how to shape it</span>
+                <div class="hint-panel">
+                  The key insight isn't "context makes Claude better" (obvious). It's that <strong>you control the context</strong>, and that's your superpower.
+                  <br><br><strong>Walk through three layers:</strong>
+                  <br><br><strong>1. CLAUDE.md / AGENTS.md — project-wide context</strong>
+                  <br>This is always loaded. It tells Claude your architecture, policies, conventions, and available skills. Open it and show how specific it is — it's not generic boilerplate, it's our team's knowledge.
+                  <span class="hint-example"># Show a specific policy that changes Claude's behavior:
+# e.g., the concurrency section that says "never assume SWIFT_DEFAULT_ACTOR_ISOLATION"
+# or the design system section that enforces Warp tokens over hardcoded values</span>
+
+                  <strong>2. Rules — behavioral overrides</strong>
+                  <br>Rules in <code>.claude/rules/</code> shape specific outputs. Show <code>unleash-cli.md</code> — it makes Claude format Unleash output as ASCII tables with all 8 environments. Without this rule, Claude would just dump raw JSON.
+                  <span class="hint-say">"Rules are surgical. Instead of writing 'format this as a table' every time, the rule does it automatically. Think of them as linting for AI behavior."</span>
+
+                  <strong>3. Module AGENTS.md — scoped context</strong>
+                  <br>Show <code>.claude/rules/module-agents.md</code> — when Claude touches files in a module that has its own AGENTS.md, it reads that module's specific conventions first.
+                  <span class="hint-example"># Example: Recommerce/Sources/RecommerceTransaction/AGENTS.md
+# has TJT-specific patterns and API generation rules
+# Claude automatically picks these up when editing files in that module</span>
+
+                  <strong>How to improve context:</strong>
+                  <br>• Found Claude making the same mistake twice? Add a rule for it.
+                  <br>• New architectural decision? Update AGENTS.md.
+                  <br>• Module has unique patterns? Add a module-level AGENTS.md.
+                  <br>• Repeating the same instructions? Create a skill.
+                  <br><br>
+                  <span class="hint-say">"Context isn't static documentation — it's a living system. Every time Claude gets something wrong, ask yourself: 'Could better context have prevented this?' If yes, update a file. You're training the system, not just using it."</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-title">Rules</div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Show how rules shape behavior</span>
+                <div class="hint-panel">
+                  <span class="hint-cmd">ls .claude/rules/
+cat .claude/rules/unleash-cli.md</span>
+                  Show how <code>unleash-cli.md</code> tells Claude to always format Unleash output as ASCII tables with box-drawing characters, show all 8 environments, use checkmark/cross marks.
+                  <br><br>Then show:
+                  <span class="hint-cmd">cat .claude/rules/module-agents.md</span>
+                  This tells Claude to read module-specific AGENTS files when touching code in those modules.
+                  <br><br>
+                  <span class="hint-say">"Rules are like linting for AI behavior. Instead of correcting Claude every time, you write the rule once and it's always applied."</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-title">Skills Catalog</div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Browse and invoke a skill live</span>
+                <div class="hint-panel">
+                  Show the skill table in AGENTS.md, then invoke one:
+                  <span class="hint-cmd"># In Claude Code, from the iOS repo:
+/ios-review-code</span>
+                  Claude will ask which file or changes to review. Point it at a recently changed file.
+                  <br><br>Compare the output to just asking:
+                  <span class="hint-example">"Review this file for issues" → generic feedback
+"/ios-review-code" → checks Warp tokens, accessibility, architecture patterns, repo policy, concurrency settings</span>
+                  <span class="hint-say">"Skills encode our team's knowledge. Instead of writing a perfect prompt every time, the skill does it for you. And every engineer on the team gets the same quality output."</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-title">Documentation Index</div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Show how Claude finds docs instead of hallucinating</span>
+                <div class="hint-panel">
+                  Point to the "Documentation Index" section in AGENTS.md — it links to:
+                  <span class="hint-example">Localization → Documentation/Localization.md
+CI workflows → Documentation/GITHUB-ACTIONS-CI-WORKFLOW-EXPLAINED.md
+Architecture → Documentation/suggested-architecture/
+Accessibility → Documentation/Accessibility.md</span>
+                  <span class="hint-say">"When Claude needs to answer a question about our CI, it doesn't guess — it reads the actual doc. AGENTS.md is basically a table of contents that keeps Claude grounded in reality."</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-title">Why This Matters (Philosophy)</div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Context is the multiplier</span>
+                <div class="hint-panel">
+                  <span class="hint-say">"The model is the same for everyone. Context is what makes it yours. CLAUDE.md and AGENTS.md are the highest-leverage files in the entire repo — one set of files that makes every AI interaction better for every engineer on the team."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Skills encode team knowledge</span>
+                <div class="hint-panel">
+                  <span class="hint-say">"Instead of 10 engineers each writing their own 'review my code' prompt — with varying quality — we write one skill that captures the best approach. A new engineer on day one gets the same review quality as a 5-year veteran."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">When NOT to use AI</span>
+                <div class="hint-panel">
+                  Be honest about limitations:
+                  <br>• Quick one-line fixes you already know how to do — just do them
+                  <br>• Code you're deeply familiar with — your mental model is faster
+                  <br>• Creative architectural decisions — AI is great at executing a vision, not great at having one
+                  <br>• Debugging with runtime context — sometimes Instruments or LLDB is just better
+                  <br><br>
+                  <span class="hint-say">"AI isn't always faster. The real skill is knowing when to reach for it and when not to. If you catch yourself waiting 30 seconds for Claude to do something you could've done in 5, that's a signal to just do it yourself."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Token awareness</span>
+                <div class="hint-panel">
+                  Run <code>/context</code> in Claude Code to show the breakdown. Point out:
+                  <br>• System prompt + AGENTS.md uses a chunk of tokens (always loaded)
+                  <br>• Each MCP server adds context overhead
+                  <br>• <code>ultrathink</code> uses ~32k thinking tokens — great for complex problems, overkill for simple ones
+                  <br><br>
+                  <span class="hint-say">"Think of tokens like a budget. You wouldn't use a sledgehammer to hang a picture. 'think' for simple tasks, 'ultrathink' for architecture. /context tells you where your budget is going."</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Block 3: Orchestration -->
+      <div class="block" data-day="1">
+        <div class="block-header" onclick="toggleBlock(this)">
+          <div class="block-check" onclick="event.stopPropagation(); toggleBlockCheck(this)">✓</div>
+          <div class="block-info">
+            <div class="block-title">Block 3: Orchestration</div>
+            <div class="block-goal">Claude Code as conductor, Codex as task manager</div>
+          </div>
+          <span class="section-badge badge-time">~50min</span>
+          <span class="block-chevron">▶</span>
+        </div>
+        <div class="block-body"><div class="block-content">
+
+          <div class="subsection">
+            <div class="subsection-title">Claude Code Power Features</div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Subagents — parallel work</span>
+                <div class="hint-panel">
+                  In Claude Code, ask it to do something that benefits from parallel research:
+                  <span class="hint-example">Explore how the Jobs and Recommerce modules handle deep links — check both in parallel</span>
+                  Claude will dispatch two subagents that work simultaneously, then merge results. You can also explicitly request parallel work:
+                  <span class="hint-example">Use subagents to research these three ViewModels in parallel and summarize their patterns</span>
+                  <span class="hint-say">"Subagents are like junior devs you can send off to research things in parallel. Each gets its own context, works independently, and reports back with findings."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Hooks — automated behaviors</span>
+                <div class="hint-panel">
+                  Hooks run automatically in response to Claude Code events. They can be shell commands, HTTP calls, or prompts. Configured in settings files (<code>~/.claude/settings.json</code> for user-level, <code>.claude/settings.json</code> for project-level):
+                  <span class="hint-cmd"># View/edit settings:
+claude /settings</span>
+                  Example hook — run SwiftLint after every file edit:
+                  <span class="hint-example">{
+  "hooks": {
+    "PostToolUse": [{
+      "matcher": "Edit|Write",
+      "command": "swiftlint lint --path $FILE_PATH"
+    }]
+  }
+}</span>
+                  Note: event names are <strong>PascalCase</strong> — <code>PostToolUse</code>, <code>PreToolUse</code>, etc.
+                  <span class="hint-say">"Hooks are like CI, but local and instant. You can make Claude's environment enforce rules automatically — lint on save, format on write, whatever makes sense for your workflow."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Plan Mode — think before executing</span>
+                <div class="hint-panel">
+                  Press <code>Shift+Tab</code> to switch to Plan mode. In this mode, Claude only analyzes and plans — it never edits files or runs commands.
+                  <br><br><strong>Demo workflow:</strong>
+                  <br>1. Switch to Plan mode (<code>Shift+Tab</code> until you see "Plan" in the status bar)
+                  <br>2. Ask: "How would you add a new feature flag to the search screen?"
+                  <br>3. Claude produces a detailed plan without touching any files
+                  <br>4. Review the plan, adjust if needed
+                  <br>5. Switch to Normal or Auto-Accept mode (<code>Shift+Tab</code>) and say "execute the plan"
+                  <br><br>
+                  <span class="hint-say">"Plan first, execute second. This prevents Claude from charging down the wrong path and making changes you'll have to undo."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Session management — named sessions</span>
+                <div class="hint-panel">
+                  <span class="hint-cmd">/rename search-refactor    # Name this session
+claude --resume search-refactor  # Resume later from terminal</span>
+                  <span class="hint-say">"Name your sessions by feature or task. When you come back tomorrow, you resume with full context — Claude remembers everything from the session."</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-title">Codex Desktop App</div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Install and set up Codex</span>
+                <div class="hint-panel">
+                  Install via Homebrew:
+                  <span class="hint-cmd">brew install --cask codex</span>
+                  Or download directly from <strong>developers.openai.com/codex/app</strong> (click "Download for macOS," open the .dmg, and drag to Applications). Requires Apple Silicon (M1 or newer) and macOS 14+.<br><br>
+                  After install:
+                  <br>1. Open the Codex app and sign in with your ChatGPT account or OpenAI API key
+                  <br>2. Point it at the iOS repo (<code>~/Developer/Finn/ios-app</code>)
+                  <br>3. It reads AGENTS.md and project structure automatically
+                  <br><br>
+                  <span class="hint-say">"Codex is complementary to Claude Code. Claude Code is your interactive partner — you talk, it acts. Codex is more like a task queue — you fire and forget, come back to review."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Worktree management</span>
+                <div class="hint-panel">
+                  Codex creates isolated <strong>git worktrees</strong> for each task — a separate working copy of the repo so it doesn't interfere with your current branch.
+                  <br><br><strong>Demo:</strong> Create a task in Codex like "Write unit tests for SearchViewModel." It spins up a worktree, does the work, and you review the diff without leaving your current branch.
+                  <br><br>
+                  <span class="hint-say">"You can have 3 Codex tasks running in parallel, each on their own worktree, while you're doing something completely different in Claude Code. None of them interfere with each other."</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-title">How We Work With AI (Conceptual)</div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">The two layers: Superpowers skills + repo skills</span>
+                <div class="hint-panel">
+                  There are two complementary layers:
+                  <br><br><strong>Superpowers skills</strong> (process layer) — general-purpose workflows that work on any project:
+                  <div class="pipeline">
+                    <span class="pipeline-step">brainstorming</span>
+                    <span class="pipeline-arrow">→</span>
+                    <span class="pipeline-step">writing-plans</span>
+                    <span class="pipeline-arrow">→</span>
+                    <span class="pipeline-step">subagent-DD</span>
+                    <span class="pipeline-arrow">→</span>
+                    <span class="pipeline-step">finishing</span>
+                  </div>
+                  <strong>Repo skills</strong> (domain layer) — iOS-specific skills that know our codebase:
+                  <div class="pipeline">
+                    <span class="pipeline-step">/ios-review-code</span>
+                    <span class="pipeline-step">/ios-pre-push</span>
+                    <span class="pipeline-step">/ios-write-unit-test</span>
+                    <span class="pipeline-step">/ios-write-snapshot-test</span>
+                    <span class="pipeline-step">/ios-pr</span>
+                  </div>
+                  You mix and match. For a big feature: brainstorm, plan, execute, review, pre-push, PR. For a small task: just use the repo skills directly.
+                  <br><br>
+                  <span class="hint-say">"The Superpowers pipeline is for when you want Claude to think through the problem before jumping in. The repo skills are for specific daily actions — reviewing, testing, pushing. You'll reach for the repo skills way more often."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">When to use each approach</span>
+                <div class="hint-panel">
+                  <strong>Just use repo skills directly for:</strong>
+                  <br>• Bug fixes, small changes, tests, code reviews
+                  <br>• Anything you already know how to do — just want AI to execute faster
+                  <br><br><strong>Use the Superpowers pipeline for:</strong>
+                  <br>• New features where you haven't decided the approach yet
+                  <br>• Complex changes touching multiple modules
+                  <br>• Porting from Android (use <code>/ios-port-from-android</code> to get the reference, then plan)
+                  <br><br>
+                  <span class="hint-say">"Most of your day-to-day will be repo skills — review, test, push. The full pipeline is for when you're building something new and want Claude to think before it acts."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Design-to-code with Figma MCP</span>
+                <div class="hint-panel">
+                  Design-to-code uses the Figma MCP server (set up in Block 4). The workflow is:
+                  <br>1. Copy a Figma frame URL from the design file
+                  <br>2. Paste it into Claude Code with a prompt like:
+                  <span class="hint-example">Implement this Figma design as a SwiftUI view using Warp design tokens</span>
+                  3. Claude reads the Figma frame via MCP, gets a screenshot and layout info, and generates SwiftUI code using our Warp design tokens.
+                  <br><br>
+                  <span class="hint-say">"This closes the loop between design and code. No more eyeballing Figma specs — Claude reads the design and generates pixel-accurate SwiftUI."</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Block 4: Integrations -->
+      <div class="block" data-day="1">
+        <div class="block-header" onclick="toggleBlock(this)">
+          <div class="block-check" onclick="event.stopPropagation(); toggleBlockCheck(this)">✓</div>
+          <div class="block-info">
+            <div class="block-title">Block 4: Integrations</div>
+            <div class="block-goal">Connect the external world to the AI workflow</div>
+          </div>
+          <span class="section-badge badge-time">~50min</span>
+          <span class="block-chevron">▶</span>
+        </div>
+        <div class="block-body"><div class="block-content">
+          <div class="note">Budget extra time — Firebase auth and MCP server setup can have friction.</div>
+
+          <div class="subsection">
+            <div class="subsection-title">MCP Servers Setup</div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">XcodeBuildMCP</span>
+                <div class="hint-panel">
+                  <span class="hint-cmd">claude mcp add -s user XcodeBuildMCP npx xcodebuildmcp@latest -e XCODEBUILDMCP_DYNAMIC_TOOLS=true</span>
+                  Restart Claude Code after adding. Then test:
+                  <span class="hint-example">Build the FINN NMP scheme for iPhone 17 Pro simulator</span>
+                  <span class="hint-say">"This lets Claude build, test, and run your app without leaving the terminal. It can also boot simulators, take screenshots, and tap UI elements."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Firebase MCP</span>
+                <div class="hint-panel">
+                  <span class="hint-cmd">cd ~/Developer/Finn/ios-app && ./Scripts/setup-firebase-mcp.sh</span>
+                  First use requires Google OAuth — a browser will open. Budget 5-10 minutes for this.<br><br>
+                  Test after setup:
+                  <span class="hint-example">Show me the latest Crashlytics crashes for the FINN iOS app</span>
+                  <span class="hint-say">"Now you can ask Claude about crash trends, remote config values, and analytics — all without leaving your terminal or opening the Firebase console."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Amplitude MCP</span>
+                <div class="hint-panel">
+                  <span class="hint-cmd">claude mcp add -t http -s user Amplitude "https://mcp.eu.amplitude.com/mcp"</span>
+                  After adding, authenticate via <code>/mcp</code> → select Amplitude → browser auth.<br><br>
+                  Test:
+                  <span class="hint-example">What's the conversion rate for the search-to-ad-view funnel this week?</span>
+                  <span class="hint-say">"Need to check if a feature is actually being used before refactoring it? Ask Claude to pull the analytics right here in the terminal."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Atlassian MCP (Jira/Confluence)</span>
+                <div class="hint-panel">
+                  <span class="hint-cmd">claude mcp add -t sse -s user Atlassian https://mcp.atlassian.com/v1/sse</span>
+                  Authenticate via <code>/mcp</code> → select Atlassian → browser auth.<br><br>
+                  Test:
+                  <span class="hint-example">Show me my open Jira tickets assigned to me</span>
+                  <span class="hint-say">"You can ask Claude to read a Jira ticket, understand the requirements, and start implementing — all in one conversation."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Figma MCP — verify</span>
+                <div class="hint-panel">
+                  Figma MCP is configured as a Claude Code plugin. Verify it's working:
+                  <span class="hint-cmd">/mcp    # Check that Figma appears in the list</span>
+                  Test with any known Figma file URL:
+                  <span class="hint-example">Get the design context for this Figma frame: [paste a FINN Figma URL]</span>
+                  <span class="hint-say">"This is the bridge between design and code. Claude can read a Figma frame and generate SwiftUI that matches it — using our Warp design tokens."</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-title">Quick Wins Demo</div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Build via XcodeBuildMCP</span>
+                <div class="hint-panel">
+                  <span class="hint-example">Build the FINN NMP scheme for simulator</span>
+                  Show how Claude invokes <code>xcodebuild</code> through MCP, streams output, and reports success or failure with actionable details.
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Figma design-to-code</span>
+                <div class="hint-panel">
+                  Grab any existing FINN Figma frame URL (doesn't need to be for a new feature — just something visual). Paste it and ask:
+                  <span class="hint-example">Implement this Figma design as a SwiftUI view using Warp design tokens</span>
+                  Show how Claude reads the Figma frame, gets a screenshot, and generates code with proper Warp tokens.
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Query Amplitude</span>
+                <div class="hint-panel">
+                  <span class="hint-example">What are the top 5 most common user actions in the FINN iOS app this week?</span>
+                  Shows real analytics data right in the terminal — no browser tab needed.
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-title">Security Awareness (5min)</div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Ground rules for AI security</span>
+                <div class="hint-panel">
+                  Three rules:
+                  <br><br><strong>1. Never paste secrets into prompts.</strong> Instead of copying an API key into the chat, tell Claude to read the file:
+                  <span class="hint-example">Read the Firebase config from GoogleService-Info.plist</span>
+                  <br><strong>2. MCP tokens stay local.</strong> Auth tokens from Figma, Firebase, and Atlassian are stored in Claude Code's local config on the machine. Nothing is sent to Anthropic.
+                  <br><br><strong>3. Always review before committing.</strong> AI-generated code can have security issues — especially around auth flows, data handling, and network calls. The <code>/ios-review-code</code> skill explicitly checks for this.
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- ═══ DAY 2 ═══ -->
+    <div class="tab-panel" id="tab-day2">
+      <div class="keyboard-note">They drive, you navigate. Resist the urge to take over.</div>
+
+      <!-- Block 1: Warm-up -->
+      <div class="block" data-day="2">
+        <div class="block-header" onclick="toggleBlock(this)">
+          <div class="block-check" onclick="event.stopPropagation(); toggleBlockCheck(this)">✓</div>
+          <div class="block-info">
+            <div class="block-title">Block 1: Warm-up — Guided Skill Runs</div>
+            <div class="block-goal">Build confidence with individual skills</div>
+          </div>
+          <span class="section-badge badge-time">~50min</span>
+          <span class="block-chevron">▶</span>
+        </div>
+        <div class="block-body"><div class="block-content">
+          <div class="note">Quick recap before starting: open Warp, launch <code>claude</code> from the iOS repo root (<code>cd ~/Developer/Finn/ios-app && claude</code>). Skills are slash commands — type <code>/</code> in Claude Code to see the list.</div>
+
+          <div class="subsection">
+            <div class="subsection-title">Exercises — They Drive</div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Code Review</span>
+                <div class="hint-panel">
+                  Have them pick a recently changed file. To find candidates:
+                  <span class="hint-cmd">!git log --oneline -10</span>
+                  Then invoke the review skill:
+                  <span class="hint-cmd">/ios-review-code</span>
+                  Claude will ask what to review. Point it at the file or a recent commit diff.
+                  <br><br><strong>Discussion points after output:</strong>
+                  <br>• Did it catch Warp token usage vs hardcoded values?
+                  <br>• Did it flag accessibility issues?
+                  <br>• Did it check concurrency patterns?
+                  <br>• Compare: "What would you have caught manually vs. what the skill found?"
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Pre-push Validation</span>
+                <div class="hint-panel">
+                  Check out any branch with changes (or create a trivial one — e.g., add a comment to a file):
+                  <span class="hint-cmd">/ios-pre-push</span>
+                  This runs lint, unit tests, and snapshot validation. Show how it catches issues before CI does — saving 20+ minutes of CI feedback loop.
+                  <br><br>
+                  <span class="hint-say">"This is your local CI. Run it before pushing and you'll almost never get surprise CI failures."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Unit Test Generation</span>
+                <div class="hint-panel">
+                  Find a ViewModel or UseCase that has limited test coverage:
+                  <span class="hint-cmd">!grep -rL "import Testing\|import XCTest" --include="*.swift" app-modules/Sources/ | head -5</span>
+                  Then invoke the test generation skill:
+                  <span class="hint-cmd">/ios-write-unit-test</span>
+                  Claude will ask which file to test. Point it at the ViewModel. Show how it generates tests using Swift Testing patterns (<code>@Test</code>, <code>@Suite</code>) matching the repo's conventions.
+                  <br><br>
+                  <span class="hint-say">"Notice how it uses Swift Testing, not XCTest — because AGENTS.md tells Claude our conventions. That's context doing the heavy lifting."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Snapshot Test</span>
+                <div class="hint-panel">
+                  Pick a SwiftUI view (e.g., something in <code>app-modules/Sources/Drive/</code>):
+                  <span class="hint-cmd">/ios-write-snapshot-test</span>
+                  Show how it generates both visual snapshot and accessibility snapshot tests, matching the project's test plan structure.
+                  <br><br>
+                  <span class="hint-say">"Snapshot tests are tedious to write by hand. This skill handles the boilerplate and gets the test plan structure right every time."</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-title">Optional Quick Wins</div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Warp Design System lookup</span>
+                <div class="hint-panel">
+                  Find a hardcoded color or spacing value in the code:
+                  <span class="hint-cmd">/ios-warp-design-system</span>
+                  <span class="hint-example">What Warp token should I use instead of Color(hex: "#0063FB")?</span>
+                  Shows how Warp tokens map to hardcoded values and enforces design consistency.
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Localization flow</span>
+                <div class="hint-panel">
+                  Invoke the localization skill to add or update localized strings:
+                  <span class="hint-cmd">/ios-localization-flow</span>
+                  This handles the full workflow: adding keys to the strings file, running SwiftGen to regenerate accessors, and updating the SwiftUI views to use the generated constants.
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">iOS 26 compatibility check</span>
+                <div class="hint-panel">
+                  Run this skill to validate Liquid Glass gating in your code:
+                  <span class="hint-cmd">/ios-ios26-compatibility-check</span>
+                  It checks that iOS 26-specific APIs are properly gated with <code>@available</code> or <code>#available</code> checks, and flags any Liquid Glass usage that could crash on older OS versions.
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Block 2: End-to-End -->
+      <div class="block" data-day="2">
+        <div class="block-header" onclick="toggleBlock(this)">
+          <div class="block-check" onclick="event.stopPropagation(); toggleBlockCheck(this)">✓</div>
+          <div class="block-info">
+            <div class="block-title">Block 2: End-to-End Development</div>
+            <div class="block-goal">Full AI-driven development on a real or realistic task</div>
+          </div>
+          <span class="section-badge badge-time">~2-2.5h</span>
+          <span class="block-chevron">▶</span>
+        </div>
+        <div class="block-body"><div class="block-content">
+
+          <div class="subsection">
+            <div class="subsection-title">Choosing the Task</div>
+            <div class="option-cards">
+              <div class="option-card">
+                <div class="option-card-title">Option A: Real Backlog Item</div>
+                <ul>
+                  <li>Low-risk item &lt;4 story points</li>
+                  <li>No Figma dependency (or design already exists)</li>
+                  <li>Touches code they'll work on anyway</li>
+                </ul>
+              </div>
+              <div class="option-card">
+                <div class="option-card-title">Option B: Realistic Exercise</div>
+                <ul>
+                  <li>No good backlog items available</li>
+                  <li>Items are too risky for a learning exercise</li>
+                  <li>Want controlled scope to practice the full pipeline</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-title">The Flow</div>
+            <div class="pipeline">
+              <span class="pipeline-step">describe task</span>
+              <span class="pipeline-arrow">→</span>
+              <span class="pipeline-step">Claude implements</span>
+              <span class="pipeline-arrow">→</span>
+              <span class="pipeline-step">/ios-review-code</span>
+              <span class="pipeline-arrow">→</span>
+              <span class="pipeline-step">/ios-pre-push</span>
+              <span class="pipeline-arrow">→</span>
+              <span class="pipeline-step">/ios-pr</span>
+            </div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">How to kick it off</span>
+                <div class="hint-panel">
+                  Make sure they are in the repo root with Claude Code running:
+                  <span class="hint-cmd">cd ~/Developer/Finn/ios-app && claude</span>
+                  Then just describe the task. Claude already has AGENTS.md context, so it knows the architecture, conventions, and available skills.
+                  <span class="hint-example">Add a feature flag check for the new search filters. The toggle name is "search.filters.v2". Gate the new filter UI behind it, falling back to the existing implementation when disabled.</span>
+                  For more complex tasks, use <strong>Plan mode</strong> first (press <code>Shift+Tab</code> until you see "Plan" in the status bar) to let Claude plan the approach, then switch to Normal or Auto-Accept to execute.
+                  <br><br>After implementation, chain the repo skills:
+                  <span class="hint-cmd">/ios-review-code     # Review changes
+/ios-pre-push        # Lint + tests + snapshots
+/ios-pr              # Create the PR</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-title">Exercise Options (if Option B)</div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Add a feature flag to an existing screen</span>
+                <div class="hint-panel">
+                  <strong>Scope:</strong> ~1-2 hours. No Figma needed.
+                  <br><br><strong>Steps:</strong>
+                  <br>1. Create a new Unleash toggle:
+                  <span class="hint-cmd">unleash-cli create-everywhere my-feature-flag --description "Test flag"</span>
+                  2. In Claude Code, describe the task:
+                  <span class="hint-example">Gate [existing screen element] behind the my-feature-flag Unleash toggle. Show the new version when enabled, fall back to existing when disabled.</span>
+                  3. Claude will modify the SwiftUI view, add the Unleash check, and write tests
+                  <br>4. Run the validation chain: <code>/ios-review-code</code> → <code>/ios-pre-push</code> → <code>/ios-pr</code>
+                  <br><br>This touches: Unleash CLI, SwiftUI, testing, and the full validation pipeline.
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Port a small Android behavior to iOS</span>
+                <div class="hint-panel">
+                  <strong>Scope:</strong> ~1.5-2 hours.
+                  <br><br>Find a recent simple Android PR or branch. Then invoke the porting skill:
+                  <span class="hint-cmd">/ios-port-from-android</span>
+                  The skill will scan the Android branch, extract API contracts and flow logic, and produce a verified iOS implementation reference. Follow with the normal review/test/PR pipeline.
+                  <br><br>
+                  <span class="hint-say">"This is one of the most impressive skills to see in action — it reads the Android code, understands the intent, and maps it to our iOS architecture automatically."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Write tests for an untested ViewModel</span>
+                <div class="hint-panel">
+                  <strong>Scope:</strong> ~1 hour. Safe, no production risk.
+                  <br><br>Find a ViewModel with no tests:
+                  <span class="hint-cmd">!find app-modules/Sources -name "*ViewModel.swift" | head -10</span>
+                  Then use <code>/ios-write-unit-test</code> and let Claude generate comprehensive tests. Review and discuss the test quality together.
+                  <br><br>
+                  <span class="hint-say">"This is a great way to build confidence — the changes are purely additive, there's no risk to production code, and they get to see the full AI workflow from start to finish."</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-title">Debugging & Course-Correction</div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Claude gives a wrong answer</span>
+                <div class="hint-panel">
+                  <strong>Step 1:</strong> Press <code>Esc Esc</code> to open the rewind menu and go back to before the mistake.
+                  <br><strong>Step 2:</strong> Rephrase with more context:
+                  <span class="hint-example">Look at the existing pattern in app-modules/Sources/Drive/Navigation/ and follow that approach instead</span>
+                  <strong>Step 3:</strong> If still wrong, add explicit constraints:
+                  <span class="hint-example">Do NOT use UIKit. Use only SwiftUI with DriveNavigationStack. Check Documentation/NavigationPatterns.md first.</span>
+                  <span class="hint-say">"Wrong answers aren't failures — they're prompting gaps. The fix is almost always better context, not a different model."</span>
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">MCP server fails</span>
+                <div class="hint-panel">
+                  <span class="hint-cmd">/mcp    # Check which servers are connected vs disconnected</span>
+                  If a server shows disconnected:
+                  <br>1. Try restarting Claude Code (exit and re-run <code>claude</code>)
+                  <br>2. If still disconnected, re-authenticate: <code>/mcp</code> → select the server → follow the auth flow
+                  <br>3. Most MCP failures are auth token expiration — re-authenticating usually fixes it
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Build fails after AI changes</span>
+                <div class="hint-panel">
+                  First, just tell Claude about the error:
+                  <span class="hint-example">The build failed. Read the error and fix it.</span>
+                  If Claude can't fix it after one attempt, try the build-fixer approach:
+                  <span class="hint-example">Use the build-fixer agent to diagnose and fix this build failure</span>
+                  Or run pre-push to get a full diagnostic:
+                  <span class="hint-cmd">/ios-pre-push</span>
+                  <span class="hint-say">"Build failures are normal — even human-written code breaks the build sometimes. The key is that Claude can usually fix its own mistakes if you just tell it what went wrong."</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Block 3: Wrap-up -->
+      <div class="block" data-day="2">
+        <div class="block-header" onclick="toggleBlock(this)">
+          <div class="block-check" onclick="event.stopPropagation(); toggleBlockCheck(this)">✓</div>
+          <div class="block-info">
+            <div class="block-title">Block 3: Wrap-up & Customization</div>
+            <div class="block-goal">Make it stick, show how to extend the system</div>
+          </div>
+          <span class="section-badge badge-time">~40min</span>
+          <span class="block-chevron">▶</span>
+        </div>
+        <div class="block-body"><div class="block-content">
+
+          <div class="subsection">
+            <div class="subsection-title">Reference Materials</div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Point to daily references</span>
+                <div class="hint-panel">
+                  Share these two files — they'll reference them most:
+                  <span class="hint-cmd">open ~/Developer/Finn/ios-app/Documentation/CLAUDE-CODE-CHEAT-SHEET.md</span>
+                  And AGENTS.md for the skill catalog and repo conventions.
+                  <br><br>Also show how to discover new skills:
+                  <span class="hint-cmd">/find-skills</span>
+                  This discovers and installs community skills that other teams have published.
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-title">Skill Authorship (10min)</div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Anatomy of a skill</span>
+                <div class="hint-panel">
+                  Show a real skill file:
+                  <span class="hint-cmd">cat .claude/skills/review-code/SKILL.md | head -30</span>
+                  Key parts:
+                  <br>• <strong>name:</strong> becomes the slash command (e.g., <code>review-code</code> → <code>/ios-review-code</code>)
+                  <br>• <strong>description:</strong> tells Claude when to auto-invoke this skill
+                  <br>• <strong>Body:</strong> the actual instructions Claude follows
+                  <br><br>To create a new skill:
+                  <span class="hint-cmd">mkdir .claude/skills/my-new-skill
+# Create SKILL.md with name, description, and instructions</span>
+                  Then add it to the AGENTS.md skill table and run:
+                  <span class="hint-cmd">/ios-agent-docs-hygiene</span>
+                  to validate consistency between skills and documentation.
+                  <br><br>
+                  <span class="hint-say">"If you find yourself giving Claude the same instructions more than twice, turn it into a skill. Future-you and the whole team benefit."</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-title">Reflection</div>
+            <ul class="item-list">
+              <li>What resonated most? What will they use daily?</li>
+              <li>What felt like overkill or unnecessary for their workflow?</li>
+              <li>Any tools or workflows they want to explore further?</li>
+            </ul>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-title">Ongoing Support</div>
+            <ul class="item-list">
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Resuming sessions after the onboarding</span>
+                <div class="hint-panel">
+                  They can pick up any past session at any time:
+                  <span class="hint-cmd">claude --resume            # Browse all past sessions
+claude --continue          # Resume the most recent one</span>
+                  Remind them to name sessions with <code>/rename feature-name</code> so they're easy to find later.
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Customizing their setup</span>
+                <div class="hint-panel">
+                  Three ways they can personalize their AI workflow going forward:
+                  <br><br><strong>1. Add rules</strong> — if Claude keeps making the same mistake, add a rule in <code>.claude/rules/</code>
+                  <br><strong>2. Modify hooks</strong> — automate repetitive checks via <code>claude /settings</code>
+                  <br><strong>3. Contribute skills</strong> — built a useful skill? Add it to the repo and update AGENTS.md so the whole team benefits
+                </div>
+              </li>
+              <li><span class="hint-trigger" onclick="toggleHint(this)">Pairing on their first solo feature</span>
+                <div class="hint-panel">
+                  Offer to pair on their first AI-driven feature after the onboarding. This can be async — they work with Claude Code, and you review the approach and output together afterward.
+                  <br><br>
+                  <span class="hint-say">"Don't worry about doing it perfectly on your own right away. Ping me when you start your first feature and we'll review how it went together."</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- ═══ TOOL CHECKLIST ═══ -->
+    <div class="tab-panel" id="tab-checklist">
+      <div class="section open">
+        <div class="section-header" onclick="toggleSection(this)">
+          <span class="section-chevron">▶</span>
+          <span class="section-title">End-of-Day-1 Tool Inventory</span>
+          <span class="section-badge badge-count" id="tools-count">0/17</span>
+        </div>
+        <div class="section-body"><div class="section-content">
+          <div class="checklist-category">Apps & CLI Tools</div>
+          <ul class="checklist" data-group="tools">
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Warp Terminal (configured as default)</span></li>
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Wispr Flow (voice-to-prompt working)</span></li>
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Claude Code CLI (authenticated)</span></li>
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Codex desktop app (authenticated, worktrees configured)</span></li>
+          </ul>
+          <div class="checklist-category">MCP Servers</div>
+          <ul class="checklist" data-group="tools">
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>XcodeBuildMCP (build/test/run from Claude)</span></li>
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Firebase MCP (Crashlytics, Remote Config — Google auth completed)</span></li>
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Amplitude MCP (analytics)</span></li>
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Atlassian MCP (Jira/Confluence)</span></li>
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Figma MCP (verified working via <code>/mcp</code>)</span></li>
+          </ul>
+          <div class="checklist-category">IDE (optional, if using VSCode)</div>
+          <ul class="checklist" data-group="tools">
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>VSCode + SweetPad extension</span></li>
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Copilot + Copilot Chat (license from ServiceNow)</span></li>
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Build server config <code>./Scripts/generate-build-server-config.sh</code></span></li>
+          </ul>
+          <div class="checklist-category">Repo Context</div>
+          <ul class="checklist" data-group="tools">
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>CLAUDE.md / AGENTS.md understood</span></li>
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Skills catalog browsed</span></li>
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>At least one skill invoked successfully</span></li>
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>At least one MCP query executed successfully</span></li>
+            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Security awareness discussed (no secrets in prompts)</span></li>
+          </ul>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- ═══ SUCCESS CRITERIA ═══ -->
+    <div class="tab-panel" id="tab-criteria">
+      <div class="section open">
+        <div class="section-header" onclick="toggleSection(this)">
+          <span class="section-chevron">▶</span>
+          <span class="section-title">By End of Day 2, They Should Be Able To...</span>
+        </div>
+        <div class="section-body"><div class="section-content">
+          <ol class="criteria-list">
+            <li><span><strong>Start a feature</strong> by describing it in Claude Code with repo context, using Plan mode for complex tasks</span></li>
+            <li><span><strong>Invoke skills</strong> for code review, pre-push, and test generation — using AGENTS.md as reference, without hand-holding</span></li>
+            <li><span><strong>Use MCP servers</strong> to query Crashlytics, Jira, or Figma from Claude Code</span></li>
+            <li><span><strong>Dispatch subagents</strong> for parallel work or research tasks</span></li>
+            <li><span><strong>Use Codex</strong> for worktree-based async task execution</span></li>
+            <li><span><strong>Prompt effectively</strong> — know when to use thinking modes, Plan mode, voice input, and when AI isn't the right tool</span></li>
+            <li><span><strong>Navigate the repo context</strong> — know where AGENTS.md, skills, rules, and docs live and how they shape Claude's behavior</span></li>
+            <li><span><strong>Extend the system</strong> — understand skill anatomy well enough to create or modify one when needed</span></li>
+          </ol>
+        </div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const STATE_KEY = 'ai-onboarding-state';
+
+  function loadState() {
+    try { return JSON.parse(localStorage.getItem(STATE_KEY)) || {}; } catch { return {}; }
+  }
+
+  function saveState(state) {
+    localStorage.setItem(STATE_KEY, JSON.stringify(state));
+  }
+
+  // ─── TABS ───
+  document.querySelectorAll('.nav-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ─── SECTIONS ───
+  function toggleSection(header) { header.closest('.section').classList.toggle('open'); }
+
+  // ─── BLOCKS ───
+  function toggleBlock(header) { header.closest('.block').classList.toggle('open'); }
+
+  function toggleBlockCheck(checkEl) {
+    checkEl.classList.toggle('checked');
+    const block = checkEl.closest('.block');
+    block.classList.toggle('block-done', checkEl.classList.contains('checked'));
+    const state = loadState();
+    const blocks = state.blocks || {};
+    const idx = Array.from(document.querySelectorAll('.block-check')).indexOf(checkEl);
+    blocks[idx] = checkEl.classList.contains('checked');
+    state.blocks = blocks;
+    saveState(state);
+    updateProgress();
+  }
+
+  // ─── CHECKLISTS ───
+  function toggleCheck(li) {
+    const cb = li.querySelector('input[type="checkbox"]');
+    cb.checked = !cb.checked;
+    li.classList.toggle('checked-item', cb.checked);
+    const state = loadState();
+    const checks = state.checks || {};
+    const allItems = document.querySelectorAll('.checklist li');
+    const idx = Array.from(allItems).indexOf(li);
+    checks[idx] = cb.checked;
+    state.checks = checks;
+    saveState(state);
+    updateCounts();
+  }
+
+  // ─── HINTS ───
+  function toggleHint(trigger) {
+    const panel = trigger.nextElementSibling;
+    if (!panel || !panel.classList.contains('hint-panel')) return;
+    const isOpen = panel.classList.contains('visible');
+    panel.classList.toggle('visible');
+    trigger.classList.toggle('hint-open');
+
+    // Close other hints in the same list item
+    const parentLi = trigger.closest('li');
+    if (parentLi) {
+      parentLi.querySelectorAll('.hint-panel.visible').forEach(p => {
+        if (p !== panel) { p.classList.remove('visible'); }
+      });
+      parentLi.querySelectorAll('.hint-trigger.hint-open').forEach(t => {
+        if (t !== trigger) { t.classList.remove('hint-open'); }
+      });
+    }
+  }
+
+  // ─── PROGRESS ───
+  function updateProgress() {
+    ['1', '2'].forEach(day => {
+      const blocks = document.querySelectorAll(`.block[data-day="${day}"] .block-check`);
+      const done = Array.from(blocks).filter(b => b.classList.contains('checked')).length;
+      const total = blocks.length;
+      const pct = total ? Math.round((done / total) * 100) : 0;
+      document.getElementById(`day${day}-pct`).textContent = pct + '%';
+      document.getElementById(`day${day}-bar`).style.width = pct + '%';
+      const el = document.getElementById(`progress-day${day}`);
+      el.classList.toggle('completed', pct === 100);
+      el.classList.toggle('active', pct > 0 && pct < 100);
+    });
+  }
+
+  function updateCounts() {
+    [
+      { group: 'prereqs-must', id: 'prereqs-must-count' },
+      { group: 'prereqs-nice', id: 'prereqs-nice-count' },
+      { group: 'tools', id: 'tools-count' },
+    ].forEach(({ group, id }) => {
+      const items = document.querySelectorAll(`[data-group="${group}"] li`);
+      const done = Array.from(items).filter(li => li.querySelector('input').checked).length;
+      const el = document.getElementById(id);
+      el.textContent = done + '/' + items.length;
+      el.classList.toggle('badge-done', done === items.length);
+      el.classList.toggle('badge-count', done !== items.length);
+    });
+  }
+
+  // ─── EXPAND / COLLAPSE ALL ───
+  function expandAll() {
+    const activePanel = document.querySelector('.tab-panel.active');
+    activePanel.querySelectorAll('.block, .section').forEach(el => el.classList.add('open'));
+  }
+
+  function collapseAll() {
+    const activePanel = document.querySelector('.tab-panel.active');
+    activePanel.querySelectorAll('.block, .section').forEach(el => el.classList.remove('open'));
+  }
+
+  // ─── RESET ───
+  function resetAll() {
+    if (!confirm('Reset all progress? This cannot be undone.')) return;
+    localStorage.removeItem(STATE_KEY);
+    document.querySelectorAll('.block-check').forEach(el => {
+      el.classList.remove('checked');
+      el.closest('.block').classList.remove('block-done');
+    });
+    document.querySelectorAll('.checklist input[type="checkbox"]').forEach(cb => {
+      cb.checked = false;
+      cb.closest('li').classList.remove('checked-item');
+    });
+    document.querySelectorAll('.hint-panel').forEach(p => p.classList.remove('visible'));
+    document.querySelectorAll('.hint-trigger').forEach(t => t.classList.remove('hint-open'));
+    updateProgress();
+    updateCounts();
+  }
+
+  // ─── RESTORE STATE ───
+  function restoreState() {
+    const state = loadState();
+    if (state.blocks) {
+      document.querySelectorAll('.block-check').forEach((el, idx) => {
+        if (state.blocks[idx]) {
+          el.classList.add('checked');
+          el.closest('.block').classList.add('block-done');
+        }
+      });
+    }
+    if (state.checks) {
+      document.querySelectorAll('.checklist li').forEach((li, idx) => {
+        if (state.checks[idx]) {
+          const cb = li.querySelector('input[type="checkbox"]');
+          cb.checked = true;
+          li.classList.add('checked-item');
+        }
+      });
+    }
+    updateProgress();
+    updateCounts();
+  }
+
+  restoreState();
+</script>
+</body>
+</html>
