@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LinkedIn Carousel — AI Workflow Onboarding</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: #f2f2f2;
+    color: #1a1a1a;
+    min-height: 100vh;
+  }
+
+  /* ─── TOOLBAR ─── */
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid #e5e5e5;
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .toolbar-title {
+    font-size: 13px;
+    font-weight: 400;
+    color: #999;
+    letter-spacing: 0.5px;
+  }
+
+  .toolbar-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 3px 10px;
+    background: #f5f5f5;
+    color: #999;
+    border-radius: 4px;
+    border: 1px solid #e5e5e5;
+  }
+
+  .toolbar-actions { display: flex; gap: 10px; align-items: center; }
+
+  .btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 7px 16px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+    color: #888;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn:hover { border-color: #999; color: #444; }
+
+  .btn-primary { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  .btn-primary:hover { background: #333; border-color: #333; color: #fff; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .export-progress { display: none; align-items: center; gap: 10px; }
+  .export-progress.active { display: flex; }
+  .export-bar-track { width: 160px; height: 3px; background: #eee; border-radius: 2px; overflow: hidden; }
+  .export-bar-fill { height: 100%; background: #1a1a1a; border-radius: 2px; transition: width 0.3s; width: 0%; }
+  .export-status { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #bbb; }
+
+  .scale-hint {
+    text-align: center;
+    font-size: 11px;
+    color: #bbb;
+    padding: 10px;
+    font-weight: 300;
+  }
+
+  /* ─── LIGHTBOX ─── */
+  .lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(0,0,0,0.85);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .lightbox.active {
+    display: flex;
+  }
+
+  .lightbox-slide {
+    transform-origin: center center;
+  }
+
+  .lightbox-hint {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    pointer-events: none;
+  }
+
+  .lightbox-nav {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    border: none;
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.6);
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+
+  .lightbox-nav:hover {
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+  }
+
+  .lightbox-prev { left: 24px; }
+  .lightbox-next { right: 24px; }
+
+  .slide-container { cursor: pointer; }
+
+  /* ─── SLIDES ─── */
+  .slides-wrapper {
+    padding: 32px 32px 80px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  .slide-container { position: relative; }
+
+  .slide-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: #ccc;
+    margin-bottom: 6px;
+    text-align: center;
+    letter-spacing: 1px;
+  }
+
+  /* ─── SLIDE BASE ─── */
+  .slide {
+    width: 1080px;
+    height: 1350px;
+    background: #ffffff;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+    transform: scale(0.35);
+    transform-origin: top left;
+  }
+
+  .slide-container {
+    width: calc(1080px * 0.35);
+    height: calc(1350px * 0.35);
+    overflow: hidden;
+  }
+
+  .slide-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 88px 96px;
+  }
+
+  /* ─── SHARED ELEMENTS ─── */
+  .s-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .s-name {
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #bbb;
+  }
+
+  .s-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    color: #999;
+  }
+
+  .s-hero {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .s-headline {
+    font-size: 96px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: #1a1a1a;
+    letter-spacing: -2px;
+  }
+
+  .s-headline-md {
+    font-size: 78px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: #1a1a1a;
+    letter-spacing: -1.5px;
+  }
+
+  .s-headline span {
+    font-weight: 300;
+  }
+
+  .s-headline-md span {
+    font-weight: 300;
+  }
+
+  .s-emphasis {
+    margin-top: 40px;
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 2;
+  }
+
+  .s-emphasis span {
+    background: #1a1a1a;
+    color: #fff;
+    padding: 6px 16px;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  .s-rule {
+    width: 48px;
+    height: 1px;
+    background: #ddd;
+    margin: 36px 0;
+  }
+
+  .s-body {
+    font-size: 32px;
+    line-height: 1.6;
+    color: #444;
+    font-weight: 400;
+    max-width: 820px;
+  }
+
+  .s-body-sm {
+    font-size: 26px;
+    line-height: 1.6;
+    color: #555;
+    font-weight: 300;
+  }
+
+  .s-eyebrow {
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #777;
+    margin-bottom: 20px;
+  }
+
+  /* Pagination */
+  .s-bottom {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .s-bottom-name {
+    margin-left: auto;
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #888;
+  }
+
+  .s-dot {
+    width: 24px;
+    height: 2px;
+    background: #e5e5e5;
+    border-radius: 1px;
+  }
+
+  .s-dot.active {
+    background: #1a1a1a;
+    width: 36px;
+  }
+
+  /* ─── SLIDE 2: THE GAP ─── */
+  .gap-before {
+    font-size: 28px;
+    font-weight: 300;
+    color: #ccc;
+    font-style: italic;
+    line-height: 1.5;
+    margin-bottom: 48px;
+  }
+
+  .gap-arrow {
+    font-size: 24px;
+    color: #ddd;
+    margin: 28px 0;
+    font-weight: 300;
+  }
+
+  .gap-after {
+    font-size: 28px;
+    font-weight: 400;
+    color: #1a1a1a;
+    line-height: 1.5;
+  }
+
+  /* ─── SLIDE 3: DAY 1 ─── */
+  .blocks-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 16px;
+  }
+
+  .block-card {
+    border: 1px solid #eee;
+    border-radius: 12px;
+    padding: 40px 36px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .block-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: #ccc;
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+  }
+
+  .block-title {
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #1a1a1a;
+  }
+
+  .block-desc {
+    font-size: 18px;
+    color: #999;
+    line-height: 1.55;
+    font-weight: 300;
+  }
+
+  .block-time {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    color: #ccc;
+    margin-top: auto;
+    padding-top: 20px;
+  }
+
+  /* ─── SLIDE 4: TOOL STACK ─── */
+  .stack-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 16px;
+  }
+
+  .stack-item {
+    display: flex;
+    align-items: baseline;
+    gap: 24px;
+    padding: 28px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .stack-item:last-child { border-bottom: none; }
+
+  .stack-name {
+    font-size: 26px;
+    font-weight: 600;
+    color: #1a1a1a;
+    min-width: 240px;
+  }
+
+  .stack-role {
+    font-size: 20px;
+    color: #999;
+    font-weight: 300;
+  }
+
+  /* ─── SLIDE 5: CONTEXT ─── */
+  .ctx-big {
+    font-size: 200px;
+    font-weight: 700;
+    color: #1a1a1a;
+    letter-spacing: -8px;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .ctx-big-label {
+    font-size: 28px;
+    font-weight: 300;
+    color: #999;
+    margin-bottom: 48px;
+  }
+
+  .ctx-layers {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .ctx-layer {
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    padding: 16px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .ctx-layer:last-child { border-bottom: none; }
+
+  .ctx-layer-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    color: #1a1a1a;
+    min-width: 280px;
+  }
+
+  .ctx-layer-desc {
+    font-size: 18px;
+    color: #999;
+    font-weight: 300;
+  }
+
+  /* ─── SLIDE 6: ORCHESTRATION ─── */
+  .orch-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 16px;
+  }
+
+  .orch-item {
+    padding: 28px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .orch-item:last-child { border-bottom: none; }
+
+  .orch-title {
+    font-size: 26px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+  }
+
+  .orch-desc {
+    font-size: 19px;
+    color: #999;
+    font-weight: 300;
+    line-height: 1.55;
+  }
+
+  .orch-code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    color: #666;
+  }
+
+  /* ─── SLIDE 7: INTEGRATIONS ─── */
+  .int-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 16px;
+  }
+
+  .int-item {
+    padding: 28px 0;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    align-items: baseline;
+    gap: 24px;
+  }
+
+  .int-item:last-child { border-bottom: none; }
+
+  .int-name {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1a1a1a;
+    min-width: 200px;
+  }
+
+  .int-desc {
+    font-size: 18px;
+    color: #999;
+    font-weight: 300;
+    line-height: 1.5;
+  }
+
+  .int-example {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 15px;
+    color: #bbb;
+    margin-top: 6px;
+    font-style: italic;
+  }
+
+  /* ─── SLIDE 8: DAY 2 ─── */
+  .d2-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 16px;
+  }
+
+  .d2-step {
+    padding: 32px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .d2-step:last-child { border-bottom: none; }
+
+  .d2-step-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    color: #ccc;
+    margin-bottom: 12px;
+  }
+
+  .d2-step-title {
+    font-size: 26px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 10px;
+  }
+
+  .d2-step-desc {
+    font-size: 19px;
+    color: #999;
+    font-weight: 300;
+    line-height: 1.55;
+  }
+
+  .d2-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .d2-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    padding: 5px 14px;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    color: #999;
+  }
+
+  /* ─── SLIDE 9: CAPABILITIES ─── */
+  .cap-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 16px;
+  }
+
+  .cap-item {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 22px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .cap-item:last-child { border-bottom: none; }
+
+  .cap-check {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #1a1a1a;
+    flex-shrink: 0;
+  }
+
+  .cap-text {
+    font-size: 22px;
+    font-weight: 400;
+    color: #1a1a1a;
+    line-height: 1.35;
+  }
+
+  /* ─── SLIDE 10: CTA ─── */
+  .cta-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .cta-repo {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    color: #999;
+    margin-top: 40px;
+  }
+
+  .cta-note {
+    font-size: 18px;
+    color: #ccc;
+    font-weight: 300;
+    margin-top: 12px;
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="toolbar-left">
+    <div class="toolbar-title">LinkedIn Carousel</div>
+    <div class="toolbar-badge">1080 x 1350</div>
+  </div>
+  <div class="toolbar-actions">
+    <div class="export-progress" id="exportProgress">
+      <div class="export-bar-track"><div class="export-bar-fill" id="exportFill"></div></div>
+      <div class="export-status" id="exportStatus">0 / 10</div>
+    </div>
+    <button class="btn" onclick="exportSingle()">Export Current</button>
+    <button class="btn btn-primary" onclick="exportAll()" id="exportBtn">Export All</button>
+  </div>
+</div>
+
+<div class="scale-hint">Preview at 35%. Exports at native 1080 x 1350.</div>
+
+
+<div class="slides-wrapper" id="slidesWrapper">
+
+  <!-- SLIDE 1: HOOK -->
+  <div class="slide-container">
+    <div class="slide-label">01 / 10</div>
+    <div class="slide" id="slide-1">
+      <div class="slide-inner">
+        <div class="s-top">
+          <div class="s-num">01 / 10</div>
+        </div>
+        <div class="s-hero">
+          <div class="s-headline">
+            you wouldn't<br>ship without CI.
+          </div>
+        </div>
+        <div class="s-bottom">
+          <div class="s-dot active"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div>
+          <span class="s-bottom-name">Matvii Sakhnenko</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: REFRAME -->
+  <div class="slide-container">
+    <div class="slide-label">02 / 10</div>
+    <div class="slide" id="slide-2">
+      <div class="slide-inner">
+        <div class="s-top">
+          <div class="s-num">02 / 10</div>
+        </div>
+        <div class="s-hero">
+          <div class="s-headline-md">
+            so why are you<br>
+            AI-ing without<br>
+            <span>infrastructure?</span>
+          </div>
+          <div class="s-rule"></div>
+          <div class="s-body">
+            Most teams hand engineers an AI tool and say "figure it out." No project context. No shared workflows. No integrations. Every prompt starts from scratch.
+          </div>
+        </div>
+        <div class="s-bottom">
+          <div class="s-dot"></div><div class="s-dot active"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div>
+          <span class="s-bottom-name">Matvii Sakhnenko</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: CLARIFY -->
+  <div class="slide-container">
+    <div class="slide-label">03 / 10</div>
+    <div class="slide" id="slide-3">
+      <div class="slide-inner">
+        <div class="s-top">
+          <div class="s-num">03 / 10</div>
+        </div>
+        <div class="s-hero">
+          <div class="s-headline-md">
+            the tool isn't<br>the bottleneck.
+          </div>
+          <div class="s-rule"></div>
+          <div class="s-body">
+            This isn't about which model you use. It's about what's around it &mdash; the context it reads, the workflows it follows, the tools it can reach.
+          </div>
+          <div class="s-emphasis"><span>The environment is the product.</span></div>
+        </div>
+        <div class="s-bottom">
+          <div class="s-dot"></div><div class="s-dot"></div><div class="s-dot active"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div>
+          <span class="s-bottom-name">Matvii Sakhnenko</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: THESIS -->
+  <div class="slide-container">
+    <div class="slide-label">04 / 10</div>
+    <div class="slide" id="slide-4">
+      <div class="slide-inner">
+        <div class="s-top">
+          <div class="s-num">04 / 10</div>
+        </div>
+        <div class="s-hero">
+          <div class="s-headline-md">
+            infrastructure<br>
+            <span>compounds.</span>
+          </div>
+          <div class="s-rule"></div>
+          <div class="s-body">
+            Context makes skills better. Skills make integrations useful. Integrations make orchestration possible. Each layer multiplies the ones below it.
+          </div>
+        </div>
+        <div class="s-bottom">
+          <div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot active"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div>
+          <span class="s-bottom-name">Matvii Sakhnenko</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: LAYER 1 -->
+  <div class="slide-container">
+    <div class="slide-label">05 / 10</div>
+    <div class="slide" id="slide-5">
+      <div class="slide-inner">
+        <div class="s-top">
+          <div class="s-eyebrow">Layer 1</div>
+          <div class="s-num">05 / 10</div>
+        </div>
+        <div class="s-hero">
+          <div class="s-headline-md">
+            context.
+          </div>
+          <div class="s-rule"></div>
+          <div class="s-body" style="margin-bottom: 48px;">
+            An AGENTS.md that describes your architecture. Rules that encode your conventions. Skills that capture your team's best workflows as repeatable commands.
+          </div>
+          <div class="s-emphasis"><span>The AI stops being generic and starts knowing your codebase.</span></div>
+        </div>
+        <div class="s-bottom">
+          <div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot active"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div>
+          <span class="s-bottom-name">Matvii Sakhnenko</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: LAYER 2 -->
+  <div class="slide-container">
+    <div class="slide-label">06 / 10</div>
+    <div class="slide" id="slide-6">
+      <div class="slide-inner">
+        <div class="s-top">
+          <div class="s-eyebrow">Layer 2</div>
+          <div class="s-num">06 / 10</div>
+        </div>
+        <div class="s-hero">
+          <div class="s-headline-md">
+            orchestration.
+          </div>
+          <div class="s-rule"></div>
+          <div class="s-body" style="margin-bottom: 48px;">
+            Subagents that work in parallel. Plan mode that reasons before it codes. Hooks that automate quality gates. Sessions you can resume across days.
+          </div>
+          <div class="s-emphasis"><span>One engineer, multiple streams of work.</span></div>
+        </div>
+        <div class="s-bottom">
+          <div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot active"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div>
+          <span class="s-bottom-name">Matvii Sakhnenko</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: LAYER 3 -->
+  <div class="slide-container">
+    <div class="slide-label">07 / 10</div>
+    <div class="slide" id="slide-7">
+      <div class="slide-inner">
+        <div class="s-top">
+          <div class="s-eyebrow">Layer 3</div>
+          <div class="s-num">07 / 10</div>
+        </div>
+        <div class="s-hero">
+          <div class="s-headline-md">
+            integrations.
+          </div>
+          <div class="s-rule"></div>
+          <div class="s-body" style="margin-bottom: 48px;">
+            Figma designs pulled into code. Jira tickets read as context. Build tools triggered from the same session. Analytics queried without leaving the terminal.
+          </div>
+          <div class="s-emphasis"><span>No more switching between ten tabs to do one task.</span></div>
+        </div>
+        <div class="s-bottom">
+          <div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot active"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div>
+          <span class="s-bottom-name">Matvii Sakhnenko</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8: PUNCHLINE -->
+  <div class="slide-container">
+    <div class="slide-label">08 / 10</div>
+    <div class="slide" id="slide-8">
+      <div class="slide-inner">
+        <div class="s-top">
+          <div class="s-num">08 / 10</div>
+        </div>
+        <div class="s-hero">
+          <div class="s-headline-md">
+            most teams stop<br>
+            <span>before layer 1.</span>
+          </div>
+          <div class="s-rule"></div>
+          <div class="s-body">
+            They use the AI. They don't build the environment around it. Every engineer writes their own prompts, in their own way, with zero shared context.
+          </div>
+          <div class="s-emphasis"><span>That's not adoption. That's just access.</span></div>
+        </div>
+        <div class="s-bottom">
+          <div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot active"></div><div class="s-dot"></div><div class="s-dot"></div>
+          <span class="s-bottom-name">Matvii Sakhnenko</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9: THE GUIDE -->
+  <div class="slide-container">
+    <div class="slide-label">09 / 10</div>
+    <div class="slide" id="slide-9">
+      <div class="slide-inner">
+        <div class="s-top">
+          <div class="s-num">09 / 10</div>
+        </div>
+        <div class="s-hero">
+          <div class="s-headline-md">
+            I wrote the<br>
+            <span>setup script.</span>
+          </div>
+          <div class="s-rule"></div>
+          <div class="s-body">
+            A 2-day, facilitator-led onboarding guide. Day 1: build the environment together. Day 2: use it on real work. Open source. Fork it, adapt it to your stack.
+          </div>
+          <div class="s-emphasis"><span>Think of it like bootstrapping a CI pipeline &mdash; but for AI workflows.</span></div>
+        </div>
+        <div class="s-bottom">
+          <div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot active"></div><div class="s-dot"></div>
+          <span class="s-bottom-name">Matvii Sakhnenko</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 10: CTA -->
+  <div class="slide-container">
+    <div class="slide-label">10 / 10</div>
+    <div class="slide" id="slide-10">
+      <div class="slide-inner">
+        <div class="s-top">
+          <div class="s-num">10 / 10</div>
+        </div>
+        <div class="cta-center">
+          <div class="s-headline">
+            open sourced.
+          </div>
+          <div class="s-rule"></div>
+          <div class="s-body">
+            Link in comments.
+          </div>
+        </div>
+        <div class="s-bottom">
+          <div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div><div class="s-dot active"></div>
+          <span class="s-bottom-name">Matvii Sakhnenko</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox">
+  <div class="lightbox-slide" id="lightboxSlide"></div>
+  <button class="lightbox-nav lightbox-prev" id="lbPrev">&larr;</button>
+  <button class="lightbox-nav lightbox-next" id="lbNext">&rarr;</button>
+  <div class="lightbox-hint">click anywhere to close &middot; arrows to navigate</div>
+</div>
+
+<script>
+  // ─── LIGHTBOX ───
+  let currentLbIndex = 0;
+  const allSlides = () => document.querySelectorAll('.slide');
+
+  function openLightbox(index) {
+    currentLbIndex = index;
+    renderLightbox();
+    document.getElementById('lightbox').classList.add('active');
+  }
+
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('active');
+    document.getElementById('lightboxSlide').innerHTML = '';
+  }
+
+  function renderLightbox() {
+    const slide = allSlides()[currentLbIndex];
+    const clone = slide.cloneNode(true);
+    clone.removeAttribute('id');
+    // Scale to fit viewport height with some padding
+    const vh = window.innerHeight - 48;
+    const scale = vh / 1350;
+    clone.style.transform = 'scale(' + scale + ')';
+    clone.style.transformOrigin = 'top left';
+    clone.style.flexShrink = '0';
+    const container = document.getElementById('lightboxSlide');
+    container.innerHTML = '';
+    container.style.width = (1080 * scale) + 'px';
+    container.style.height = (1350 * scale) + 'px';
+    container.style.overflow = 'hidden';
+    container.appendChild(clone);
+  }
+
+  document.getElementById('lightbox').addEventListener('click', function(e) {
+    if (e.target.closest('.lightbox-nav')) return;
+    closeLightbox();
+  });
+
+  document.getElementById('lbPrev').addEventListener('click', function(e) {
+    e.stopPropagation();
+    currentLbIndex = (currentLbIndex - 1 + allSlides().length) % allSlides().length;
+    renderLightbox();
+  });
+
+  document.getElementById('lbNext').addEventListener('click', function(e) {
+    e.stopPropagation();
+    currentLbIndex = (currentLbIndex + 1) % allSlides().length;
+    renderLightbox();
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (!document.getElementById('lightbox').classList.contains('active')) return;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') { currentLbIndex = (currentLbIndex - 1 + allSlides().length) % allSlides().length; renderLightbox(); }
+    if (e.key === 'ArrowRight') { currentLbIndex = (currentLbIndex + 1) % allSlides().length; renderLightbox(); }
+  });
+
+  // Attach click handlers to slide containers
+  document.querySelectorAll('.slide-container').forEach(function(container, i) {
+    container.addEventListener('click', function() { openLightbox(i); });
+  });
+
+  // ─── EXPORT ───
+  async function exportSlide(slideEl, index) {
+    const dataUrl = await htmlToImage.toPng(slideEl, {
+      width: 1080,
+      height: 1350,
+      pixelRatio: 1,
+      backgroundColor: '#ffffff',
+      style: { transform: 'none', transformOrigin: 'top left' }
+    });
+    const link = document.createElement('a');
+    link.download = 'slide-' + String(index).padStart(2, '0') + '.png';
+    link.href = dataUrl;
+    link.click();
+  }
+
+  function exportSingle() {
+    const slides = document.querySelectorAll('.slide');
+    let best = slides[0], bestDist = Infinity;
+    slides.forEach(s => {
+      const r = s.getBoundingClientRect();
+      const d = Math.abs(r.top + r.height/2 - window.innerHeight/2);
+      if (d < bestDist) { bestDist = d; best = s; }
+    });
+    exportSlide(best, best.id.split('-')[1]);
+  }
+
+  async function exportAll() {
+    const btn = document.getElementById('exportBtn');
+    const progress = document.getElementById('exportProgress');
+    const fill = document.getElementById('exportFill');
+    const status = document.getElementById('exportStatus');
+    btn.disabled = true; btn.textContent = 'Exporting...';
+    progress.classList.add('active');
+    const slides = document.querySelectorAll('.slide');
+    for (let i = 0; i < slides.length; i++) {
+      status.textContent = (i+1) + ' / ' + slides.length;
+      fill.style.width = ((i+1)/slides.length*100) + '%';
+      await exportSlide(slides[i], i+1);
+      await new Promise(r => setTimeout(r, 500));
+    }
+    btn.disabled = false; btn.textContent = 'Export All';
+    status.textContent = 'Done';
+    setTimeout(() => progress.classList.remove('active'), 2000);
+  }
+</script>
+
+</body>
+</html>
